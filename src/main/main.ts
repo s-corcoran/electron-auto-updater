@@ -15,60 +15,44 @@ import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
+let mainWindow: BrowserWindow | null = null;
 class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
-    autoUpdater.checkForUpdatesAndNotify();
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    autoUpdater.checkForUpdates();
+    if (mainWindow) {
+      mainWindow.webContents.send('update', {
+        status: 'running check for update',
+      });
+    }
   }
 }
-
-let mainWindow: BrowserWindow | null = null;
 
 autoUpdater.on('update-not-available', () => {
   console.log('update-not-available');
   // show dialog to user that no update is available
   if (!mainWindow) return;
-  dialog.showMessageBox(mainWindow, {
-    title: 'No update available',
-    message: 'No update available',
-    buttons: ['OK'],
-  });
+  mainWindow.webContents.send('update', { status: 'update-not-available' });
 });
 
 autoUpdater.on('update-available', () => {
   console.log('update-available');
   if (!mainWindow) return;
-  dialog.showMessageBox(mainWindow, {
-    title: 'update-available',
-    message: 'update-available',
-    buttons: ['OK'],
-  });
+  mainWindow.webContents.send('update', { status: 'update-available' });
 });
 
 autoUpdater.on('checking-for-update', () => {
   if (!mainWindow) return;
-  dialog.showMessageBox(mainWindow, {
-    title: 'checking-for-update',
-    message: 'checking-for-update',
-    buttons: ['OK'],
-  });
+  mainWindow.webContents.send('update', { status: 'checking-for-update' });
 });
 
 autoUpdater.on('update-downloaded', () => {
   console.log('update-downloaded');
   if (!mainWindow) return;
-  dialog.showMessageBox(mainWindow, {
-    title: 'update-downloaded',
-    message: 'update-downloaded',
-    buttons: ['OK'],
-  });
-});
-
-ipcMain.on('ipc-example', async (event, arg) => {
-  const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
-  console.log(msgTemplate(arg));
-  event.reply('ipc-example', msgTemplate('pong'));
+  mainWindow.webContents.send('update', { status: 'update-downloaded' });
 });
 
 if (process.env.NODE_ENV === 'production') {
@@ -132,6 +116,8 @@ const createWindow = async () => {
     } else {
       mainWindow.show();
     }
+    console.log('sending');
+    mainWindow.webContents.send('update', { status: 'window open' });
   });
 
   mainWindow.on('closed', () => {

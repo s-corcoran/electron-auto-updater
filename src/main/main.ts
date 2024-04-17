@@ -9,7 +9,7 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -24,6 +24,46 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+
+autoUpdater.on('update-not-available', () => {
+  console.log('update-not-available');
+  // show dialog to user that no update is available
+  if (!mainWindow) return;
+  dialog.showMessageBox(mainWindow, {
+    title: 'No update available',
+    message: 'No update available',
+    buttons: ['OK'],
+  });
+});
+
+autoUpdater.on('update-available', () => {
+  console.log('update-available');
+  if (!mainWindow) return;
+  dialog.showMessageBox(mainWindow, {
+    title: 'update-available',
+    message: 'update-available',
+    buttons: ['OK'],
+  });
+});
+
+autoUpdater.on('checking-for-update', () => {
+  if (!mainWindow) return;
+  dialog.showMessageBox(mainWindow, {
+    title: 'checking-for-update',
+    message: 'checking-for-update',
+    buttons: ['OK'],
+  });
+});
+
+autoUpdater.on('update-downloaded', () => {
+  console.log('update-downloaded');
+  if (!mainWindow) return;
+  dialog.showMessageBox(mainWindow, {
+    title: 'update-downloaded',
+    message: 'update-downloaded',
+    buttons: ['OK'],
+  });
+});
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
